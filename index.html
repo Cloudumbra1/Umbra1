@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Tático UMBRA</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Scrollbar customizada */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Canvas cursor */
+        canvas { cursor: crosshair; }
+    </style>
+</head>
+<body class="bg-black text-zinc-300 selection:bg-purple-900 selection:text-white min-h-screen flex flex-col">
+
+    <!-- HEADER -->
+    <header class="border-b border-zinc-800 p-4 md:p-6 sticky top-0 z-40 bg-black/95 backdrop-blur-sm shadow-xl">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
+                <div class="bg-white text-black p-2.5 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.2)] animate-pulse">
+                    <i data-lucide="umbrella" class="w-7 h-7" stroke-width="2.5"></i>
+                </div>
+                <div class="text-center md:text-left">
+                    <h1 class="text-3xl font-black tracking-[0.2em] text-white leading-none">UMBRA</h1>
+                    <p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">We only see each other at weddings and funerals.</p>
+                </div>
+            </div>
+            
+            <nav class="flex flex-wrap w-full md:w-auto justify-center gap-2 bg-zinc-900/50 p-1.5 rounded-xl border border-zinc-800">
+                <button onclick="switchTab('squad')" id="tab-squad" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 bg-white text-black shadow-lg scale-105">
+                    <i data-lucide="users" class="w-3.5 h-3.5"></i> <span class="hidden md:inline">Squad</span>
+                </button>
+                <button onclick="switchTab('sensi')" id="tab-sensi" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 text-zinc-500 hover:text-white hover:bg-zinc-800">
+                    <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i> <span class="hidden md:inline">Sensi</span>
+                </button>
+                <button onclick="switchTab('map')" id="tab-map" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 text-zinc-500 hover:text-white hover:bg-zinc-800">
+                    <i data-lucide="globe" class="w-3.5 h-3.5"></i> <span class="hidden md:inline">Mapa</span>
+                </button>
+                <button onclick="switchTab('training')" id="tab-training" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 text-zinc-500 hover:text-white hover:bg-zinc-800">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i> <span class="hidden md:inline">Treino</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main id="app-content" class="max-w-6xl mx-auto p-4 md:p-6 pb-24 w-full flex-grow">
+        <!-- Content injected via JS -->
+    </main>
+
+    <!-- DRAWING MODAL (LIGHTBOX) -->
+    <div id="image-modal" class="fixed inset-0 z-50 bg-black/95 hidden flex flex-col items-center justify-center p-4 backdrop-blur-md">
+        <!-- Toolbar -->
+        <div class="absolute top-4 flex gap-4 bg-zinc-900 p-2 rounded-lg border border-zinc-800 z-50 shadow-2xl">
+            <div class="flex items-center gap-2 px-3 border-r border-zinc-800">
+                <i data-lucide="pencil" class="text-purple-500 w-4 h-4"></i>
+                <span class="text-xs font-bold text-white uppercase">Modo Tático</span>
+            </div>
+            <button onclick="clearCanvas()" class="p-2 rounded hover:bg-red-900/30 text-red-500 transition-colors" title="Limpar Rota">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+            <button onclick="closeModal()" class="p-2 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors" title="Fechar">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="relative w-full h-full max-w-6xl max-h-[85vh] flex items-center justify-center border border-zinc-800 rounded-lg bg-zinc-900 overflow-hidden" id="canvas-container">
+            <img id="modal-img" src="" class="absolute inset-0 w-full h-full object-contain pointer-events-none select-none opacity-80" alt="Mapa Base">
+            <canvas id="tactical-canvas" class="absolute inset-0 w-full h-full touch-none"></canvas>
+        </div>
+        
+        <p class="text-zinc-500 text-[10px] uppercase tracking-widest mt-3 flex items-center gap-2">
+            <i data-lucide="mouse-pointer-2" class="w-3 h-3"></i> Arraste para desenhar rotações
+        </p>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // === DADOS ===
+        const guildInfo = { season: 'Meta 2026 | Season 38' };
+
+        const mapsData = {
+            bermuda: {
+                title: 'Bermuda',
+                image: 'https://i.imgur.com/K207PXG.jpeg',
+                locations: [
+                    { id: 'b1', name: 'Clock Tower', risk: 'Extremo', loot: 'S', desc: 'O relógio conta o tempo de vida. Domine a torre ou morra na escada.' },
+                    { id: 'b2', name: 'Factory', risk: 'Extremo', loot: 'A', desc: 'Luta corporal no teto, tiroteio no chão. O caos industrial.' },
+                    { id: 'b3', name: 'Peak', risk: 'Muito Alto', loot: 'B', desc: 'O topo do mundo. Visível de todos os lados, proteção zero.' },
+                    { id: 'b8', name: 'Observatory', risk: 'Alto', loot: 'SS', desc: 'O melhor loot do mapa. Se você sair vivo, sai armado até os dentes.', sniper: true },
+                    { id: 'b7', name: 'Sentosa', risk: 'Baixo', loot: 'SS', desc: 'A ilha do exílio. Loot para todos, mas a ponte é uma armadilha mortal.', sniper: true },
+                    { id: 'b6', name: 'Mars Electric', risk: 'Baixo', loot: 'S', desc: 'Vasto e silencioso. Perfeito para lootear e rotacionar com veículos.' },
+                    { id: 'b4', name: 'Pochinok', risk: 'Médio', loot: 'A', desc: 'Combate casa a casa. Requer coordenação do squad.' },
+                    { id: 'b5', name: 'Bimasakti Strip', risk: 'Alto', loot: 'B', desc: 'Zona de passagem perigosa. Corredor da morte.' },
+                    { id: 'b9', name: 'Graveyard', risk: 'Médio', loot: 'A', desc: 'Cemitério. Bom loot nas mansões e igreja.' },
+                    { id: 'b10', name: 'Bullseye', risk: 'Baixo', loot: 'B', desc: 'Estande de tiro. Aberto e com pouco cover.' },
+                    { id: 'b11', name: 'Shipyard', risk: 'Alto', loot: 'A', desc: 'Estaleiro. Muitos contêineres e guindastes. Verticalidade.' },
+                    { id: 'b12', name: 'Plantation', risk: 'Baixo', loot: 'B', desc: 'Plantação. Área aberta, perigosa sem gelo.' },
+                    { id: 'b13', name: 'Katulistiwa', risk: 'Médio', loot: 'B', desc: 'Ponto de passagem. Loot razoável, mas exposto.' },
+                    { id: 'b14', name: 'Rim Nam Village', risk: 'Baixo', loot: 'A', desc: 'Vilas flutuantes. Bom para rotação furtiva.' },
+                    { id: 'b15', name: 'Hangar', risk: 'Alto', loot: 'A', desc: 'Guerra de contêineres. Cuidado com o high ground do Observatório.' },
+                    { id: 'b16', name: 'Kota Tua', risk: 'Baixo', loot: 'C', desc: 'Pequena vila ao sul. Loot fraco, apenas passagem.' },
+                    { id: 'b17', name: 'Cape Town', risk: 'Médio', loot: 'A', desc: 'Cidade costeira. Combate urbano intenso em ruas estreitas.' },
+                    { id: 'b18', name: 'Keraton', risk: 'Baixo', loot: 'C', desc: 'Pequeno condomínio. Bom para segurar posição, ruim de loot.' },
+                    { id: 'b19', name: 'Mill', risk: 'Alto', loot: 'A', desc: 'Rei da Colina. Vantagem absurda de altura.' },
+                    { id: 'b20', name: 'Riverside', risk: 'Baixo', loot: 'C', desc: 'Casas na beira do rio. Rotação alternativa.' }
+                ]
+            },
+            purgatorio: {
+                title: 'Purgatório',
+                image: 'https://i.imgur.com/gXKUKyB.jpeg',
+                locations: [
+                    { id: 'p1', name: 'Brasilia', risk: 'Extremo', loot: 'SS', desc: 'O inferno na terra. Tirolesas cruzadas e combate vertical.' },
+                    { id: 'p2', name: 'Central', risk: 'Alto', loot: 'A', desc: 'Casas de 3 andares. Ponto central de rotação.' },
+                    { id: 'p3', name: 'Marbleworks', risk: 'Alto', loot: 'A', desc: 'Labirinto de guindastes. Snipers dominam o topo.' },
+                    { id: 'p4', name: 'Golf Course', risk: 'Médio', loot: 'B', desc: 'Campo aberto. Perigoso atravessar a pé.' },
+                    { id: 'p5', name: 'Moathouse', risk: 'Médio', loot: 'SS', desc: 'A mansão isolada. Spawn quase garantido de M82B.', sniper: true },
+                    { id: 'p6', name: 'Lumber Mill', risk: 'Baixo', loot: 'B', desc: 'Serraria. Rotação longa, mas segura.' },
+                    { id: 'p7', name: 'Fire Brigade', risk: 'Médio', loot: 'B', desc: 'Corpo de bombeiros. Loot rápido e rotação para Central.' },
+                    { id: 'p8', name: 'Forge', risk: 'Baixo', loot: 'B', desc: 'Área industrial leste. Tranquila para loot inicial.' },
+                    { id: 'p9', name: 'Ski Lodge', risk: 'Médio', loot: 'A', desc: 'Pista de gelo. Rotação rápida com veículos.' },
+                    { id: 'p10', name: 'Campsite', risk: 'Baixo', loot: 'C', desc: 'Pequeno acampamento. Apenas passagem.' },
+                    { id: 'p11', name: 'Fields', risk: 'Alto', loot: 'C', desc: 'Campos abertos. Área de morte entre Brasilia e Marbleworks.' },
+                    { id: 'p12', name: 'Crossroads', risk: 'Baixo', loot: 'C', desc: 'Posto avançado isolado. Loot fraco.' },
+                    { id: 'p13', name: 'Quarry', risk: 'Baixo', loot: 'B', desc: 'Pedreira. Cuidado com quem está em cima.' },
+                    { id: 'p14', name: 'Mt. Villa', risk: 'Baixo', loot: 'C', desc: 'Vilas no topo da montanha. Visão boa, loot ruim.' }
+                ]
+            },
+            kalahari: {
+                title: 'Kalahari',
+                image: 'https://i.imgur.com/5ZCbi57.jpeg',
+                locations: [
+                    { id: 'k1', name: 'Refinery', risk: 'Extremo', loot: 'SS', desc: 'Plataformas altas. Quem domina o topo controla o jogo.', sniper: true },
+                    { id: 'k2', name: 'Command Post', risk: 'Alto', loot: 'S', desc: 'Corredores estreitos e tendas. Trocação de perto (SMG).' },
+                    { id: 'k3', name: 'The Sub', risk: 'Alto', loot: 'A', desc: 'Submarino no deserto. Cair em cima é vantagem, embaixo é morte.', sniper: true },
+                    { id: 'k4', name: 'Bayfront', risk: 'Médio', loot: 'A', desc: 'Cidade densa. Ótimo para flanquear e pegar costas.' },
+                    { id: 'k5', name: 'Santa Catarina', risk: 'Médio', loot: 'B', desc: 'O navio encalhado. Bom loot interno, mas cuidado com granadas.' },
+                    { id: 'k6', name: 'Stone Ridge', risk: 'Alto', loot: 'A', desc: 'Pedreira. High Ground poderoso para snipers contra Command Post.', sniper: true },
+                    { id: 'k7', name: 'Mammoth', risk: 'Baixo', loot: 'B', desc: 'Esqueleto gigante. Rotação segura pelas bordas.' },
+                    { id: 'k8', name: 'Shrines', risk: 'Baixo', loot: 'B', desc: 'Templos antigos. Loot espalhado, bom para início tranquilo.' },
+                    { id: 'k9', name: 'Council Hall', risk: 'Médio', loot: 'A', desc: 'Prédio fechado. Shotgun reina nos corredores.' },
+                    { id: 'k10', name: 'Foundation', risk: 'Baixo', loot: 'B', desc: 'Ruínas baixas. Ruim de visão, use apenas para passagem.' },
+                    { id: 'k11', name: 'Old Hampton', risk: 'Baixo', loot: 'C', desc: 'Ruínas isoladas no norte. Quase ninguém cai aqui.' },
+                    { id: 'k12', name: 'Confinement', risk: 'Baixo', loot: 'C', desc: 'A prisão. Rotação terrível, evite se possível.' },
+                    { id: 'k13', name: 'The Maze', risk: 'Médio', loot: 'B', desc: 'Labirinto de ruínas. Fácil se perder e tomar costas.' }
+                ]
+            },
+            nexterra: {
+                title: 'Nova Terra',
+                image: 'https://i.imgur.com/DAdWFdu.jpeg',
+                locations: [
+                    { id: 'n1', name: 'Intellect Center', risk: 'Extremo', loot: 'SS', desc: 'Ilhas flutuantes. Loot tecnológico nível 3. Caos total.' },
+                    { id: 'n2', name: 'Grav Labs', risk: 'Alto', loot: 'S', desc: 'Zona de gravidade zero. Pulos altos permitem tiros aéreos (trickshots).', sniper: true },
+                    { id: 'n3', name: 'Deca Square', risk: 'Médio', loot: 'A', desc: 'Área comercial. Muitos obstáculos e portais de teletransporte.' },
+                    { id: 'n4', name: 'Museum', risk: 'Baixo', loot: 'A', desc: 'Combate interno. Vidros quebram e revelam sua posição.' },
+                    { id: 'n5', name: 'Plazaria', risk: 'Alto', loot: 'S', desc: 'Praça de alimentação gigante. Trocação frenética e muito loot.' },
+                    { id: 'n6', name: 'Mud Site', risk: 'Baixo', loot: 'B', desc: 'Obras no mangue. Paredes quebráveis. Bom para camperar.' },
+                    { id: 'n7', name: 'Farmtopia', risk: 'Médio', loot: 'A', desc: 'Fazenda futurista. Aberto no centro, loot nas bordas.', sniper: true },
+                    { id: 'n8', name: 'Rust Town', risk: 'Médio', loot: 'B', desc: 'Favela enferrujada. Muitos pixels e frestas para atirar.' },
+                    { id: 'n9', name: 'Zipway', risk: 'Médio', loot: 'A', desc: 'Industrial. Muitos canos e tirolesas para rotação rápida.' },
+                    { id: 'n10', name: 'Twin Bridge', risk: 'Baixo', loot: 'C', desc: 'Duas pontes. Ponto de estrangulamento de rotação.' },
+                    { id: 'n11', name: 'Mortar Ruins', risk: 'Baixo', loot: 'C', desc: 'Ruínas de concreto. Proteção sólida, mas pouco loot.' },
+                    { id: 'n12', name: 'Turbine', risk: 'Baixo', loot: 'B', desc: 'Turbinas eólicas. Espaço aberto, cuidado com snipers.' }
+                ]
+            }
+        };
+
+        const squadRoles = [
+            { 
+                role: 'O Rusher (Entry)', desc: 'Entra no pixel e sai antes de tomar dano.', 
+                active: 'Tatsuya', color: 'border-red-600', icon: 'flame', iconColor: 'text-red-600',
+                meta: 'Speed Burst', pet: 'Rockie', petDesc: 'Cooldown Reduzido',
+                pri: 'MP40', sec: 'M1887 (Baubau)', side: 'UZI', obs: 'Foco: Cadência insana.'
+            },
+            { 
+                role: 'O Bloqueador (Nero)', desc: 'Impede o inimigo de usar Gelo.', 
+                active: 'Nero', color: 'border-orange-500', icon: 'ghost', iconColor: 'text-orange-500',
+                meta: 'Anti-Gelo', pet: 'Drakinho', petDesc: 'Info de cura',
+                pri: 'Bizon', sec: 'M1014-III', side: 'M1873', obs: 'Foco: Spam agressivo.'
+            },
+            { 
+                role: 'O Sniper (Lila)', desc: 'Aplica lentidão. Controle de área.', 
+                active: 'Iris', color: 'border-purple-500', icon: 'crosshair', iconColor: 'text-purple-500',
+                meta: 'Slow Motion', pet: 'Falcão', petDesc: 'Queda Rápida',
+                pri: 'M82B (Barret)', sec: 'AC80 / Woodpecker', side: 'Desert Eagle', obs: 'Lila comba com Rifles.'
+            },
+            { 
+                role: 'O Suporte (Kassie)', desc: 'Cura infinita no Rusher.', 
+                active: 'Kassie', color: 'border-blue-500', icon: 'activity', iconColor: 'text-blue-500',
+                meta: 'Infinite HP', pet: 'Dom Pisante', petDesc: 'Gelo Infinito',
+                pri: 'M4A1-Z (Chip 3)', sec: 'Charge Buster', side: 'FGL-24', obs: 'Lança expulsa do cover.'
+            }
+        ];
+
+        const trainingSchedule = [
+            { 
+                day: 'SEGUNDA A QUINTA', 
+                title: 'Rankeada & X-Treino (Grind)', 
+                desc: 'Foco total em subir patente, pegar entrosamento e treinar a comunicação. Jogue sério, mas use para testar limites.',
+                highlight: false
+            },
+            { 
+                day: 'SEXTA E SÁBADO (16:00 - 22:00)', 
+                title: '🏆 TORNEIO DE GUILDA', 
+                desc: 'Compromisso obrigatório. Foco absoluto no torneio da guilda. Sem testes, apenas o meta definido. Comunique-se, jogue pela vitória.',
+                highlight: true
+            },
+            { 
+                day: 'DOMINGO', 
+                title: 'Descanso / Livre', 
+                desc: 'Recuperação mental ou gameplay casual para manter a mecânica em dia sem pressão.',
+                highlight: false
+            }
+        ];
+
+        const tacticalTips = [
+            { title: 'Rotação de Zona', desc: 'O objetivo não é matar, é pegar o centro da safe e prever o fechamento (Zona 3 e 4). Líder passa a call de rotação veicular.' },
+            { title: 'Focus Fire', desc: 'Comunicação é chave. O IGL marca o alvo e TODOS atiram juntos. Derrubou um? Rusha com vantagem numérica.' },
+            { title: 'Gestão de Recursos', desc: 'Otimizar tempo de loot. Partilha de recursos (gelo, kits) e economia de fichas para reviver ou fortalecer armas.' },
+            { title: 'Táticas de End Game', desc: 'Posicionamento high ground vs low ground no final da partida. Uso inteligente de granadas para expulsar inimigos.' },
+            { title: 'Análise Tática (VOD)', desc: 'Rever os clipes das mortes. Identificar quem ficou para trás na rotação ou quem atirou sem cover. Ajuste fino de posicionamento.' }
+        ];
+
+        // === ESTADO ===
+        let currentTab = 'squad';
+        let currentMapKey = 'bermuda';
+        let selectedLocationId = null;
+        
+        // Canvas State
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let ctx = null;
+
+        // === FUNÇÕES DE UI ===
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Atualiza botões
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.className = 'nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 text-zinc-500 hover:text-white hover:bg-zinc-800';
+            });
+            const activeBtn = document.getElementById(`tab-${tab}`);
+            activeBtn.className = 'nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 bg-white text-black shadow-lg scale-105';
+
+            renderContent();
+        }
+
+        function switchMap(mapKey) {
+            currentMapKey = mapKey;
+            selectedLocationId = null;
+            renderContent();
+        }
+
+        function toggleLocation(id) {
+            selectedLocationId = selectedLocationId === id ? null : id;
+            renderContent();
+        }
+
+        // === LÓGICA DE DESENHO E MODAL ===
+        function openModal(src) {
+            if (!src) return;
+            const modal = document.getElementById('image-modal');
+            const img = document.getElementById('modal-img');
+            const canvas = document.getElementById('tactical-canvas');
+            
+            img.src = src;
+            modal.classList.remove('hidden');
+            
+            // Setup Canvas após imagem carregar (ou delay curto)
+            setTimeout(() => {
+                const container = document.getElementById('canvas-container');
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+                
+                ctx = canvas.getContext('2d');
+                ctx.strokeStyle = '#a855f7'; // Purple-500
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                
+                addCanvasListeners(canvas);
+            }, 100);
+        }
+
+        function closeModal() {
+            document.getElementById('image-modal').classList.add('hidden');
+            clearCanvas();
+        }
+
+        function clearCanvas() {
+            const canvas = document.getElementById('tactical-canvas');
+            const context = canvas.getContext('2d');
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function addCanvasListeners(canvas) {
+            // Mouse Events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            // Touch Events
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Previne scroll
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                lastX = touch.clientX - rect.left;
+                lastY = touch.clientY - rect.top;
+                isDrawing = true;
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (!isDrawing) return;
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+                
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                
+                lastX = x;
+                lastY = y;
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', stopDrawing);
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.stroke();
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        // === GERADOR DE SENSI ===
+        function renderSensi(container) {
+            const html = `
+                <div class="space-y-8 animate-fadeIn max-w-2xl mx-auto">
+                    <div class="text-center">
+                        <h2 class="text-2xl font-bold text-white flex items-center justify-center gap-3 uppercase mb-2">
+                            <i data-lucide="sliders-horizontal" class="text-purple-500"></i> Gerador de Sensibilidade
+                        </h2>
+                        <p class="text-zinc-500 text-sm">Gera configurações aleatórias otimizadas para o meta atual.</p>
+                    </div>
+
+                    <div class="flex justify-center">
+                        <button onclick="generateNewSensi()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg shadow-purple-900/20 transform transition hover:scale-105 active:scale-95 flex items-center gap-2 text-lg">
+                            <i data-lucide="refresh-cw" class="w-5 h-5"></i> GERAR NOVA SENSI
+                        </button>
+                    </div>
+
+                    <!-- Perfil Detectado -->
+                    <div id="sensi-profile-name" class="text-center text-sm font-bold text-purple-400 uppercase tracking-widest mb-2 animate-pulse">
+                        ---
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="sensi-grid">
+                        <!-- Sensi cards injected here -->
+                    </div>
+
+                    <div class="bg-zinc-950 border border-zinc-800 p-5 rounded-xl mt-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div class="text-center md:text-left">
+                            <h3 class="text-white font-bold text-sm uppercase">DPI Otimizada</h3>
+                            <p class="text-zinc-500 text-xs">Entre 500 e 960</p>
+                        </div>
+                        <div class="text-3xl font-black text-white tracking-widest bg-black px-6 py-2 rounded border border-zinc-800" id="dpi-display">---</div>
+                    </div>
+
+                    <div class="bg-zinc-950 border border-zinc-800 p-5 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div class="text-center md:text-left">
+                            <h3 class="text-white font-bold text-sm uppercase">Tamanho do Botão</h3>
+                            <p class="text-zinc-500 text-xs">Botão de Atirar (10-100)</p>
+                        </div>
+                        <div class="text-3xl font-black text-white tracking-widest bg-black px-6 py-2 rounded border border-zinc-800" id="btn-size-display">--%</div>
+                    </div>
+                </div>
+            `;
+            container.innerHTML = html;
+            generateNewSensi(); // Gera automaticamente ao abrir
+        }
+
+        function generateNewSensi() {
+            // Perfis para garantir que "faça sentido"
+            const profiles = [
+                {
+                    name: 'PERFIL: RUSHER (VELOCIDADE)',
+                    ranges: {
+                        geral: [185, 200],
+                        redDot: [175, 200],
+                        x2: [180, 200],
+                        x4: [180, 200],
+                        awm: [100, 160], // Rushers as vezes usam AWM rápida
+                        dpi: [800, 960],
+                        btn: [40, 55]
+                    }
+                },
+                {
+                    name: 'PERFIL: HÍBRIDO (BALANCEADO)',
+                    ranges: {
+                        geral: [165, 190],
+                        redDot: [160, 185],
+                        x2: [165, 190],
+                        x4: [165, 190],
+                        awm: [80, 140],
+                        dpi: [650, 850],
+                        btn: [50, 65]
+                    }
+                },
+                {
+                    name: 'PERFIL: PRECISION (SUPORTE)',
+                    ranges: {
+                        geral: [145, 180],
+                        redDot: [140, 175],
+                        x2: [150, 180],
+                        x4: [150, 180],
+                        awm: [40, 110], // Mais precisão
+                        dpi: [500, 700],
+                        btn: [60, 80]
+                    }
+                }
+            ];
+
+            // Seleciona um perfil aleatório
+            const profile = profiles[Math.floor(Math.random() * profiles.length)];
+            
+            // Função auxiliar para gerar número no range
+            const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+            const sensiConfig = [
+                { label: 'Geral', val: rand(...profile.ranges.geral), icon: 'move' },
+                { label: 'Ponto Vermelho', val: rand(...profile.ranges.redDot), icon: 'dot' },
+                { label: 'Mira 2x', val: rand(...profile.ranges.x2), icon: 'zoom-in' },
+                { label: 'Mira 4x', val: rand(...profile.ranges.x4), icon: 'crosshair' },
+                { label: 'Mira AWM', val: rand(...profile.ranges.awm), icon: 'target' },
+            ];
+
+            const dpi = rand(...profile.ranges.dpi);
+            const btnSize = rand(...profile.ranges.btn);
+
+            // Render Grid
+            const grid = document.getElementById('sensi-grid');
+            if(grid) {
+                // Atualiza Nome do Perfil
+                const profileNameDiv = document.getElementById('sensi-profile-name');
+                if(profileNameDiv) profileNameDiv.innerText = profile.name;
+
+                grid.innerHTML = sensiConfig.map(s => `
+                    <div class="bg-zinc-900 border border-zinc-800 p-4 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-purple-500/50 transition-colors">
+                        <span class="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">${s.label}</span>
+                        <span class="text-4xl font-black text-white">${s.val}</span>
+                        <div class="w-full bg-zinc-800 h-1.5 rounded-full mt-1 overflow-hidden">
+                            <div class="bg-purple-600 h-full" style="width: ${(s.val / 200) * 100}%"></div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                document.getElementById('dpi-display').innerText = dpi;
+                document.getElementById('btn-size-display').innerText = btnSize + '%';
+            }
+        }
+
+        // === RENDERIZAÇÃO ===
+        function renderContent() {
+            const container = document.getElementById('app-content');
+            container.innerHTML = ''; // Limpa
+
+            if (currentTab === 'squad') {
+                renderSquad(container);
+            } else if (currentTab === 'map') {
+                renderMap(container);
+            } else if (currentTab === 'training') {
+                renderTraining(container);
+            } else if (currentTab === 'sensi') {
+                renderSensi(container);
+            }
+            
+            lucide.createIcons(); // Re-inicializa ícones
+        }
+
+        function renderSquad(container) {
+            const banner = `
+                <div class="rounded-2xl border border-zinc-800 bg-gradient-to-r from-zinc-900 to-black p-6 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg mb-8 animate-fadeIn">
+                    <div class="text-center md:text-left">
+                        <h2 class="text-xl font-bold text-white mb-2 flex items-center justify-center md:justify-start gap-2">
+                            <i data-lucide="skull" class="text-white"></i> PROTOCOLO: ${guildInfo.season}
+                        </h2>
+                        <p class="text-zinc-400 max-w-xl text-sm leading-relaxed">
+                            <span class="text-purple-400 font-bold">NERO:</span> Bloqueia o gelo inimigo. <br/>
+                            <span class="text-purple-400 font-bold">LILA:</span> Tiros de Rifle causam lentidão.
+                        </p>
+                    </div>
+                    <div class="hidden md:block opacity-20">
+                        <i data-lucide="target" class="w-24 h-24 text-white"></i>
+                    </div>
+                </div>
+            `;
+
+            let cardsHtml = '<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 animate-fadeIn">';
+            squadRoles.forEach(role => {
+                cardsHtml += `
+                    <div class="bg-zinc-950 border-t-4 ${role.color} p-5 rounded-xl shadow-md hover:bg-zinc-900 transition-all flex flex-col h-full group relative overflow-hidden">
+                        <div class="flex justify-between items-start mb-3 relative z-10">
+                            <div class="p-2 bg-black rounded border border-zinc-800 text-white">
+                                <i data-lucide="${role.icon}" class="${role.iconColor}"></i>
+                            </div>
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-zinc-500 bg-black px-2 py-1 rounded border border-zinc-800">${role.meta}</span>
+                        </div>
+                        <h4 class="text-lg font-bold text-white mb-1 relative z-10">${role.role}</h4>
+                        <p class="text-xs text-zinc-400 mb-4 h-8 relative z-10">${role.desc}</p>
+                        
+                        <div class="bg-zinc-900 p-2.5 rounded border border-zinc-800 mb-2 relative z-10">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[10px] text-zinc-500 uppercase">Ativa:</span>
+                                <span class="text-xs font-bold text-purple-400">${role.active}</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-zinc-900 p-2.5 rounded border border-zinc-800 flex-grow relative z-10">
+                            <div class="flex items-center gap-1 mb-2 border-b border-zinc-800 pb-1">
+                                <i data-lucide="crosshair" class="w-3 h-3 text-white"></i>
+                                <span class="text-[10px] text-zinc-500 uppercase font-bold">Loadout</span>
+                            </div>
+                            <div class="space-y-1.5">
+                                <div class="flex justify-between text-xs"><span class="text-zinc-500">Pri:</span> <span class="text-white font-bold">${role.pri}</span></div>
+                                <div class="flex justify-between text-xs"><span class="text-zinc-500">Sec:</span> <span class="text-white font-bold">${role.sec}</span></div>
+                                <div class="flex justify-between text-xs"><span class="text-zinc-500">Side:</span> <span class="text-zinc-400">${role.side}</span></div>
+                            </div>
+                            <div class="mt-2 text-[9px] text-purple-400 italic border-t border-zinc-800 pt-1">"${role.obs}"</div>
+                        </div>
+
+                        <div class="mt-2 flex items-center justify-between text-[10px] text-zinc-500 bg-black p-2 rounded border border-zinc-800/50 relative z-10">
+                            <div class="flex items-center gap-1"><i data-lucide="mouse-pointer-2" class="w-3 h-3"></i> <span class="text-white font-bold">${role.pet}</span></div>
+                            <span class="text-zinc-600 italic hidden sm:block">${role.petDesc}</span>
+                        </div>
+                        
+                        <div class="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+                            <i data-lucide="${role.icon}" class="w-24 h-24"></i>
+                        </div>
+                    </div>
+                `;
+            });
+            cardsHtml += '</div>';
+
+            container.innerHTML = banner + cardsHtml;
+        }
+
+        function renderMap(container) {
+            const map = mapsData[currentMapKey];
+            
+            // Image Section
+            let imageHtml = '';
+            if (map.image) {
+                imageHtml = `
+                    <div class="rounded-2xl border border-zinc-800 overflow-hidden shadow-lg mb-6 group relative cursor-pointer animate-fadeIn" onclick="openModal('${map.image}')">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10 pointer-events-none"></div>
+                        <img src="${map.image}" alt="${map.title}" class="w-full h-48 md:h-80 object-cover opacity-80 group-hover:opacity-100 transition-all duration-700 hover:scale-105">
+                        <div class="absolute bottom-4 left-4 z-20">
+                            <h3 class="text-2xl font-black text-white uppercase tracking-widest drop-shadow-lg">${map.title}</h3>
+                            <span class="text-[10px] text-purple-400 font-bold bg-black/80 px-2 py-1 rounded backdrop-blur-sm border border-purple-500/30 flex items-center gap-1">
+                                <i data-lucide="pen-tool" class="w-3 h-3"></i> DESENHAR ROTAS
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Tabs Section
+            let tabsHtml = '<div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-zinc-800 pb-6 mb-6">';
+            tabsHtml += `
+                <div>
+                    <h2 class="text-3xl font-black text-white uppercase flex items-center gap-3">${map.title}</h2>
+                    <p class="text-zinc-500 text-sm mt-1">Análise Tática e Zonas de Risco</p>
+                </div>
+                <div class="flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide w-full md:w-auto">
+            `;
+            
+            Object.keys(mapsData).forEach(key => {
+                const isActive = key === currentMapKey;
+                const classes = isActive 
+                    ? 'bg-white text-black border-white' 
+                    : 'bg-black text-zinc-500 border-zinc-800 hover:text-white';
+                tabsHtml += `<button onclick="switchMap('${key}')" class="px-4 py-1.5 rounded text-xs font-bold uppercase tracking-wider border transition-all whitespace-nowrap ${classes}">${mapsData[key].title}</button>`;
+            });
+            tabsHtml += '</div></div>';
+
+            // Locations Grid
+            let gridHtml = '<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fadeIn">';
+            map.locations.forEach(loc => {
+                const isSelected = selectedLocationId === loc.id;
+                const borderClass = isSelected ? 'border-white bg-zinc-800' : 'border-zinc-800 bg-zinc-900';
+                
+                let riskClass = 'bg-green-900/20 text-green-500';
+                if(loc.risk === 'Extremo') riskClass = 'bg-red-900/20 text-red-500';
+                if(loc.risk === 'Alto') riskClass = 'bg-orange-900/20 text-orange-500';
+
+                gridHtml += `
+                    <div onclick="toggleLocation('${loc.id}')" class="${borderClass} p-5 rounded-lg cursor-pointer hover:border-zinc-600 transition-all border">
+                        <div class="flex justify-between mb-2">
+                            <h3 class="font-bold text-white">${loc.name}</h3>
+                            <span class="text-[10px] px-2 py-0.5 rounded font-bold uppercase ${riskClass}">${loc.risk}</span>
+                        </div>
+                        <div class="text-xs text-zinc-500 uppercase tracking-wider mb-4 flex gap-2">
+                            <span>Loot: <span class="text-white">${loc.loot}</span></span>
+                            ${loc.sniper ? '<span class="text-purple-500 flex items-center gap-1 ml-auto"><i data-lucide="crosshair" class="w-3 h-3"></i> SNIPER</span>' : ''}
+                        </div>
+                        ${isSelected ? `
+                            <div class="animate-fadeIn">
+                                <p class="text-sm text-zinc-300 mb-3 pl-2 border-l-2 border-white">${loc.desc}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            gridHtml += '</div>';
+
+            container.innerHTML = imageHtml + tabsHtml + gridHtml;
+        }
+
+        function renderTraining(container) {
+            let html = `
+                <div class="space-y-8 animate-fadeIn">
+                    
+                    <!-- SCHEDULE SECTION -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3 uppercase mb-6">
+                            <i data-lucide="calendar" class="text-white"></i> Cronograma Semanal
+                        </h2>
+                        <div class="grid gap-4">
+            `;
+
+            weeklySchedule.forEach(item => {
+                const borderClass = item.highlight ? 'border-yellow-500 bg-zinc-900/50' : 'border-purple-600 bg-zinc-950';
+                const titleClass = item.highlight ? 'text-yellow-500' : 'text-white';
+                
+                html += `
+                    <div class="${borderClass} border-l-4 p-5 rounded-r-lg flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-md hover:bg-zinc-900 transition-all">
+                        <div class="md:w-1/3">
+                            <span class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">${item.period}</span>
+                            <h3 class="text-lg font-bold ${titleClass} leading-tight">${item.title}</h3>
+                        </div>
+                        <p class="text-xs text-zinc-400 md:w-2/3 leading-relaxed border-t md:border-t-0 md:border-l border-zinc-800 pt-3 md:pt-0 md:pl-4">
+                            ${item.desc}
+                        </p>
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <!-- TIPS SECTION -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3 uppercase mb-6 mt-4">
+                            <i data-lucide="lightbulb" class="text-purple-500"></i> Dicas Táticas de Elite
+                        </h2>
+                        <div class="grid md:grid-cols-2 gap-4">
+            `;
+
+            tacticalTips.forEach(tip => {
+                html += `
+                    <div class="bg-zinc-900 border border-zinc-800 p-4 rounded-lg hover:border-purple-500/50 transition-all">
+                        <h4 class="text-sm font-bold text-white mb-2 uppercase flex items-center gap-2">
+                            <i data-lucide="check-circle" class="w-3 h-3 text-purple-500"></i> ${tip.title}
+                        </h4>
+                        <p class="text-xs text-zinc-400 leading-relaxed">${tip.desc}</p>
+                    </div>
+                `;
+            });
+
+            html += '</div></div></div>';
+            container.innerHTML = html;
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            renderContent();
+        });
+
+    </script>
+</body>
+</html>
