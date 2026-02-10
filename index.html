@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Painel Tático UMBRA</title>
     
     <!-- Tailwind CSS -->
@@ -15,86 +15,145 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         
         /* Scrollbar customizada */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #09090b; }
         ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
 
-        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+        .animate-fadeIn { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
+        /* Welcome Screen Animations */
+        .welcome-fade-out { animation: fadeOut 0.5s ease-out forwards; }
+        @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
         /* Canvas cursor */
-        canvas { cursor: crosshair; }
+        canvas { cursor: crosshair; touch-action: none; }
+        
+        /* Mobile Safe Area for Bottom Nav */
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
-<body class="bg-black text-zinc-300 selection:bg-purple-900 selection:text-white min-h-screen flex flex-col">
+<body class="bg-black text-zinc-300 selection:bg-purple-900 selection:text-white min-h-screen flex flex-col pb-20 md:pb-0 overflow-hidden" id="main-body">
 
-    <!-- HEADER -->
-    <header class="border-b border-zinc-800 p-4 md:p-6 sticky top-0 z-40 bg-black/95 backdrop-blur-sm shadow-xl">
+    <!-- WELCOME SCREEN -->
+    <div id="welcome-screen" class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-6 text-center transition-all duration-500">
+        <div class="mb-8 relative">
+            <div class="absolute inset-0 bg-purple-600 blur-3xl opacity-20 rounded-full animate-pulse"></div>
+            <div class="bg-white text-black p-6 rounded-full shadow-[0_0_40px_rgba(255,255,255,0.15)] relative z-10">
+                <i data-lucide="umbrella" class="w-16 h-16 md:w-24 md:h-24" stroke-width="2"></i>
+            </div>
+        </div>
+        
+        <h1 class="text-4xl md:text-6xl font-black tracking-[0.2em] text-white leading-tight mb-4 animate-fadeIn">
+            UMBRA
+        </h1>
+        
+        <p class="text-xs md:text-sm text-zinc-500 uppercase tracking-[0.2em] mb-12 max-w-lg leading-relaxed animate-fadeIn" style="animation-delay: 0.2s">
+            Conquistar não é vencer o mundo — é dominar a si mesmo enquanto caminha por ele.
+        </p>
+
+        <button onclick="enterSite()" class="group relative px-8 py-4 bg-white text-black font-black text-sm uppercase tracking-widest rounded hover:bg-zinc-200 transition-all active:scale-95 animate-fadeIn" style="animation-delay: 0.4s">
+            <span class="relative z-10 flex items-center gap-2">
+                Acessar Painel <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+            </span>
+            <div class="absolute inset-0 bg-purple-500 blur-xl opacity-0 group-hover:opacity-30 transition-opacity"></div>
+        </button>
+
+        <div class="absolute bottom-8 text-[10px] text-zinc-700 uppercase tracking-widest animate-fadeIn" style="animation-delay: 0.6s">
+            Protocolo S38 Iniciado
+        </div>
+    </div>
+
+    <!-- HEADER (Desktop & Mobile Top) -->
+    <header class="border-b border-zinc-800 p-4 sticky top-0 z-40 bg-black/95 backdrop-blur-sm shadow-xl">
         <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
-                <div class="bg-white text-black p-2.5 rounded-full shadow-[0_0_20px_rgba(255,255,255,0.2)] animate-pulse">
-                    <i data-lucide="umbrella" class="w-7 h-7" stroke-width="2.5"></i>
+            <div class="flex items-center gap-3 w-full md:w-auto justify-center md:justify-start">
+                <div class="bg-white text-black p-2 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                    <i data-lucide="umbrella" class="w-6 h-6" stroke-width="2.5"></i>
                 </div>
                 <div class="text-center md:text-left">
-                    <h1 class="text-3xl font-black tracking-[0.2em] text-white leading-none">UMBRA</h1>
-                    <p class="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">We only see each other at weddings and funerals.</p>
+                    <h1 class="text-2xl md:text-3xl font-black tracking-[0.2em] text-white leading-none">UMBRA</h1>
+                    <p class="text-[9px] md:text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">We only see each other at weddings and funerals.</p>
                 </div>
             </div>
             
-            <nav class="flex flex-wrap w-full md:w-auto justify-center gap-2 bg-zinc-900/50 p-1.5 rounded-xl border border-zinc-800">
-                <button onclick="switchTab('squad')" id="tab-squad" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 bg-white text-black shadow-lg scale-105">
-                    <i data-lucide="users" class="w-3.5 h-3.5"></i> <span class="hidden md:inline">Squad</span>
+            <!-- Desktop Nav (Hidden on Mobile) -->
+            <nav class="hidden md:flex gap-2 bg-zinc-900/50 p-1.5 rounded-xl border border-zinc-800">
+                <button onclick="switchTab('squad')" id="desk-tab-squad" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 bg-white text-black shadow-lg scale-105">
+                    <i data-lucide="users" class="w-3.5 h-3.5"></i> Squad
                 </button>
-                <button onclick="switchTab('sensi')" id="tab-sensi" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 text-zinc-500 hover:text-white hover:bg-zinc-800">
-                    <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i> <span class="hidden md:inline">Sensi</span>
+                <button onclick="switchTab('sensi')" id="desk-tab-sensi" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 text-zinc-500 hover:text-white hover:bg-zinc-800">
+                    <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i> Sensi
                 </button>
-                <button onclick="switchTab('map')" id="tab-map" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 text-zinc-500 hover:text-white hover:bg-zinc-800">
-                    <i data-lucide="globe" class="w-3.5 h-3.5"></i> <span class="hidden md:inline">Mapa</span>
+                <button onclick="switchTab('map')" id="desk-tab-map" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 text-zinc-500 hover:text-white hover:bg-zinc-800">
+                    <i data-lucide="globe" class="w-3.5 h-3.5"></i> Mapa
                 </button>
-                <button onclick="switchTab('training')" id="tab-training" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 text-zinc-500 hover:text-white hover:bg-zinc-800">
-                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i> <span class="hidden md:inline">Treino</span>
+                <button onclick="switchTab('training')" id="desk-tab-training" class="nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 text-zinc-500 hover:text-white hover:bg-zinc-800">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i> Treino
                 </button>
             </nav>
         </div>
     </header>
 
     <!-- MAIN CONTENT -->
-    <main id="app-content" class="max-w-6xl mx-auto p-4 md:p-6 pb-24 w-full flex-grow">
+    <main id="app-content" class="max-w-6xl mx-auto p-4 w-full flex-grow">
         <!-- Content injected via JS -->
     </main>
 
+    <!-- MOBILE BOTTOM NAV (Visible only on Mobile) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-black/95 border-t border-zinc-800 p-2 pb-safe z-50 flex justify-around items-center backdrop-blur-md">
+        <button onclick="switchTab('squad')" id="mob-tab-squad" class="mob-nav-btn flex flex-col items-center gap-1 p-2 text-white">
+            <i data-lucide="users" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wide">Squad</span>
+        </button>
+        <button onclick="switchTab('sensi')" id="mob-tab-sensi" class="mob-nav-btn flex flex-col items-center gap-1 p-2 text-zinc-500">
+            <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wide">Sensi</span>
+        </button>
+        <button onclick="switchTab('map')" id="mob-tab-map" class="mob-nav-btn flex flex-col items-center gap-1 p-2 text-zinc-500">
+            <i data-lucide="globe" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wide">Mapa</span>
+        </button>
+        <button onclick="switchTab('training')" id="mob-tab-training" class="mob-nav-btn flex flex-col items-center gap-1 p-2 text-zinc-500">
+            <i data-lucide="calendar" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold uppercase tracking-wide">Treino</span>
+        </button>
+    </nav>
+
     <!-- DRAWING MODAL (LIGHTBOX) -->
-    <div id="image-modal" class="fixed inset-0 z-50 bg-black/95 hidden flex flex-col items-center justify-center p-4 backdrop-blur-md">
+    <div id="image-modal" class="fixed inset-0 z-[60] bg-black/95 hidden flex flex-col items-center justify-center p-0 md:p-4 backdrop-blur-md touch-none">
         <!-- Toolbar -->
-        <div class="absolute top-4 flex gap-4 bg-zinc-900 p-2 rounded-lg border border-zinc-800 z-50 shadow-2xl">
-            <div class="flex items-center gap-2 px-3 border-r border-zinc-800">
+        <div class="absolute top-4 left-4 right-4 flex justify-between items-center bg-zinc-900/90 p-3 rounded-xl border border-zinc-800 z-50 shadow-2xl">
+            <div class="flex items-center gap-2">
                 <i data-lucide="pencil" class="text-purple-500 w-4 h-4"></i>
                 <span class="text-xs font-bold text-white uppercase">Modo Tático</span>
             </div>
-            <button onclick="clearCanvas()" class="p-2 rounded hover:bg-red-900/30 text-red-500 transition-colors" title="Limpar Rota">
-                <i data-lucide="trash-2" class="w-5 h-5"></i>
-            </button>
-            <button onclick="closeModal()" class="p-2 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors" title="Fechar">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
+            <div class="flex gap-2">
+                <button onclick="clearCanvas()" class="p-2 rounded bg-red-900/20 text-red-500 hover:bg-red-900/40 transition-colors" title="Limpar Rota">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                </button>
+                <button onclick="closeModal()" class="p-2 rounded bg-zinc-800 text-white hover:bg-zinc-700 transition-colors" title="Fechar">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
         </div>
 
         <!-- Canvas Container -->
-        <div class="relative w-full h-full max-w-6xl max-h-[85vh] flex items-center justify-center border border-zinc-800 rounded-lg bg-zinc-900 overflow-hidden" id="canvas-container">
+        <div class="relative w-full h-full md:max-w-6xl md:max-h-[85vh] flex items-center justify-center bg-zinc-900 overflow-hidden md:rounded-lg md:border border-zinc-800" id="canvas-container">
             <img id="modal-img" src="" class="absolute inset-0 w-full h-full object-contain pointer-events-none select-none opacity-80" alt="Mapa Base">
             <canvas id="tactical-canvas" class="absolute inset-0 w-full h-full touch-none"></canvas>
         </div>
         
-        <p class="text-zinc-500 text-[10px] uppercase tracking-widest mt-3 flex items-center gap-2">
-            <i data-lucide="mouse-pointer-2" class="w-3 h-3"></i> Arraste para desenhar rotações
-        </p>
+        <div class="absolute bottom-6 bg-black/60 px-4 py-2 rounded-full backdrop-blur-sm text-zinc-400 text-[10px] uppercase tracking-widest flex items-center gap-2 pointer-events-none">
+            <i data-lucide="mouse-pointer-2" class="w-3 h-3"></i> Arraste para desenhar
+        </div>
     </div>
 
     <!-- JAVASCRIPT LOGIC -->
@@ -215,23 +274,23 @@
             }
         ];
 
-        const trainingSchedule = [
-            { 
-                day: 'SEGUNDA A QUINTA', 
-                title: 'Rankeada & X-Treino (Grind)', 
-                desc: 'Foco total em subir patente, pegar entrosamento e treinar a comunicação. Jogue sério, mas use para testar limites.',
+        const weeklySchedule = [
+            {
+                period: "SEGUNDA A QUINTA",
+                title: "Rankeada & X-Treino (Grind)",
+                desc: "Foco total em subir patente, pegar entrosamento e treinar a comunicação. Jogue sério, mas use para testar limites.",
                 highlight: false
             },
-            { 
-                day: 'SEXTA E SÁBADO (16:00 - 22:00)', 
-                title: '🏆 TORNEIO DE GUILDA', 
-                desc: 'Compromisso obrigatório. Foco absoluto no torneio da guilda. Sem testes, apenas o meta definido. Comunique-se, jogue pela vitória.',
+            {
+                period: "SEXTA E SÁBADO (16:00 - 22:00)",
+                title: "🏆 TORNEIO DE GUILDA",
+                desc: "Compromisso obrigatório. Foco absoluto no torneio da guilda. Sem testes, apenas o meta definido. Comunique-se, jogue pela vitória.",
                 highlight: true
             },
-            { 
-                day: 'DOMINGO', 
-                title: 'Descanso / Livre', 
-                desc: 'Recuperação mental ou gameplay casual para manter a mecânica em dia sem pressão.',
+            {
+                period: "DOMINGO",
+                title: "Descanso / Livre",
+                desc: "Recuperação mental ou gameplay casual para manter a mecânica em dia sem pressão.",
                 highlight: false
             }
         ];
@@ -248,6 +307,7 @@
         let currentTab = 'squad';
         let currentMapKey = 'bermuda';
         let selectedLocationId = null;
+        let currentSensiMode = 'random'; // 'random', 'high', 'mid', 'low'
         
         // Canvas State
         let isDrawing = false;
@@ -256,15 +316,36 @@
         let ctx = null;
 
         // === FUNÇÕES DE UI ===
+        function enterSite() {
+            const welcome = document.getElementById('welcome-screen');
+            welcome.classList.add('welcome-fade-out');
+            document.body.classList.remove('overflow-hidden'); // Libera o scroll
+            
+            setTimeout(() => {
+                welcome.style.display = 'none';
+            }, 500);
+        }
+
         function switchTab(tab) {
             currentTab = tab;
             
-            // Atualiza botões
+            // DESKTOP
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.className = 'nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 text-zinc-500 hover:text-white hover:bg-zinc-800';
             });
-            const activeBtn = document.getElementById(`tab-${tab}`);
-            activeBtn.className = 'nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 bg-white text-black shadow-lg scale-105';
+            const deskBtn = document.getElementById(`desk-tab-${tab}`);
+            if(deskBtn) deskBtn.className = 'nav-btn px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2 bg-white text-black shadow-lg scale-105';
+
+            // MOBILE
+            document.querySelectorAll('.mob-nav-btn').forEach(btn => {
+                btn.classList.remove('text-white', 'text-purple-500');
+                btn.classList.add('text-zinc-500');
+            });
+            const mobBtn = document.getElementById(`mob-tab-${tab}`);
+            if(mobBtn) {
+                mobBtn.classList.remove('text-zinc-500');
+                mobBtn.classList.add('text-white');
+            }
 
             renderContent();
         }
@@ -280,6 +361,11 @@
             renderContent();
         }
 
+        function setSensiMode(mode) {
+            currentSensiMode = mode;
+            renderSensi(document.getElementById('app-content'));
+        }
+
         // === LÓGICA DE DESENHO E MODAL ===
         function openModal(src) {
             if (!src) return;
@@ -289,15 +375,15 @@
             
             img.src = src;
             modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; 
             
-            // Setup Canvas após imagem carregar (ou delay curto)
             setTimeout(() => {
                 const container = document.getElementById('canvas-container');
                 canvas.width = container.clientWidth;
                 canvas.height = container.clientHeight;
                 
                 ctx = canvas.getContext('2d');
-                ctx.strokeStyle = '#a855f7'; // Purple-500
+                ctx.strokeStyle = '#a855f7'; 
                 ctx.lineWidth = 4;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
@@ -308,6 +394,7 @@
 
         function closeModal() {
             document.getElementById('image-modal').classList.add('hidden');
+            document.body.style.overflow = ''; 
             clearCanvas();
         }
 
@@ -318,15 +405,13 @@
         }
 
         function addCanvasListeners(canvas) {
-            // Mouse Events
             canvas.addEventListener('mousedown', startDrawing);
             canvas.addEventListener('mousemove', draw);
             canvas.addEventListener('mouseup', stopDrawing);
             canvas.addEventListener('mouseout', stopDrawing);
 
-            // Touch Events
             canvas.addEventListener('touchstart', (e) => {
-                e.preventDefault(); // Previne scroll
+                e.preventDefault(); 
                 const touch = e.touches[0];
                 const rect = canvas.getBoundingClientRect();
                 lastX = touch.clientX - rect.left;
@@ -372,20 +457,40 @@
             isDrawing = false;
         }
 
-        // === GERADOR DE SENSI ===
+        // === GERADOR DE SENSI (ATUALIZADO) ===
         function renderSensi(container) {
+            const btnClass = (mode) => currentSensiMode === mode 
+                ? 'bg-purple-600 text-white border-purple-500' 
+                : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-white';
+
             const html = `
                 <div class="space-y-8 animate-fadeIn max-w-2xl mx-auto">
                     <div class="text-center">
                         <h2 class="text-2xl font-bold text-white flex items-center justify-center gap-3 uppercase mb-2">
                             <i data-lucide="sliders-horizontal" class="text-purple-500"></i> Gerador de Sensibilidade
                         </h2>
-                        <p class="text-zinc-500 text-sm">Gera configurações aleatórias otimizadas para o meta atual.</p>
+                        <p class="text-zinc-500 text-sm">Escolha o estilo de jogo e gere sua configuração.</p>
+                    </div>
+
+                    <!-- Mode Selector -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <button onclick="setSensiMode('random')" class="${btnClass('random')} py-2 px-4 rounded-lg text-xs font-bold uppercase transition-all border flex flex-col items-center gap-1">
+                            <i data-lucide="shuffle" class="w-4 h-4"></i> Aleatória
+                        </button>
+                        <button onclick="setSensiMode('high')" class="${btnClass('high')} py-2 px-4 rounded-lg text-xs font-bold uppercase transition-all border flex flex-col items-center gap-1">
+                            <i data-lucide="zap" class="w-4 h-4"></i> Alta (Rush)
+                        </button>
+                        <button onclick="setSensiMode('mid')" class="${btnClass('mid')} py-2 px-4 rounded-lg text-xs font-bold uppercase transition-all border flex flex-col items-center gap-1">
+                            <i data-lucide="activity" class="w-4 h-4"></i> Média (Híbrida)
+                        </button>
+                        <button onclick="setSensiMode('low')" class="${btnClass('low')} py-2 px-4 rounded-lg text-xs font-bold uppercase transition-all border flex flex-col items-center gap-1">
+                            <i data-lucide="target" class="w-4 h-4"></i> Baixa (Precisa)
+                        </button>
                     </div>
 
                     <div class="flex justify-center">
-                        <button onclick="generateNewSensi()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg shadow-purple-900/20 transform transition hover:scale-105 active:scale-95 flex items-center gap-2 text-lg">
-                            <i data-lucide="refresh-cw" class="w-5 h-5"></i> GERAR NOVA SENSI
+                        <button onclick="generateNewSensi()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg shadow-purple-900/20 transform transition hover:scale-105 active:scale-95 flex items-center gap-2 text-lg w-full md:w-auto justify-center">
+                            <i data-lucide="refresh-cw" class="w-5 h-5"></i> GERAR SENSI
                         </button>
                     </div>
 
@@ -398,72 +503,86 @@
                         <!-- Sensi cards injected here -->
                     </div>
 
-                    <div class="bg-zinc-950 border border-zinc-800 p-5 rounded-xl mt-6 flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div class="text-center md:text-left">
-                            <h3 class="text-white font-bold text-sm uppercase">DPI Otimizada</h3>
-                            <p class="text-zinc-500 text-xs">Entre 500 e 960</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-zinc-950 border border-zinc-800 p-5 rounded-xl flex flex-col justify-between items-center gap-2">
+                            <div class="text-center">
+                                <h3 class="text-white font-bold text-sm uppercase">DPI Otimizada</h3>
+                                <p class="text-zinc-500 text-[10px] uppercase tracking-wider" id="dpi-range-desc">---</p>
+                            </div>
+                            <div class="text-3xl font-black text-white tracking-widest bg-black px-6 py-2 rounded border border-zinc-800 w-full text-center" id="dpi-display">---</div>
                         </div>
-                        <div class="text-3xl font-black text-white tracking-widest bg-black px-6 py-2 rounded border border-zinc-800" id="dpi-display">---</div>
-                    </div>
 
-                    <div class="bg-zinc-950 border border-zinc-800 p-5 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div class="text-center md:text-left">
-                            <h3 class="text-white font-bold text-sm uppercase">Tamanho do Botão</h3>
-                            <p class="text-zinc-500 text-xs">Botão de Atirar (10-100)</p>
+                        <div class="bg-zinc-950 border border-zinc-800 p-5 rounded-xl flex flex-col justify-between items-center gap-2">
+                            <div class="text-center">
+                                <h3 class="text-white font-bold text-sm uppercase">Botão de Atirar</h3>
+                                <p class="text-zinc-500 text-[10px] uppercase tracking-wider">Tamanho (10-100)</p>
+                            </div>
+                            <div class="text-3xl font-black text-white tracking-widest bg-black px-6 py-2 rounded border border-zinc-800 w-full text-center" id="btn-size-display">--%</div>
                         </div>
-                        <div class="text-3xl font-black text-white tracking-widest bg-black px-6 py-2 rounded border border-zinc-800" id="btn-size-display">--%</div>
                     </div>
                 </div>
             `;
             container.innerHTML = html;
-            generateNewSensi(); // Gera automaticamente ao abrir
+            
+            // Re-render icons since we replaced HTML
+            lucide.createIcons();
+            
+            // Gera automaticamente ao abrir (ou mudar modo)
+            generateNewSensi(); 
         }
 
         function generateNewSensi() {
-            // Perfis para garantir que "faça sentido"
-            const profiles = [
-                {
-                    name: 'PERFIL: RUSHER (VELOCIDADE)',
+            // Definição dos Perfis (Ranges ajustados)
+            const profilesData = {
+                high: {
+                    name: 'PERFIL: ALTA (INSTAPLAYER)',
+                    desc: 'Movimentação Rápida & Gelos Insanos',
                     ranges: {
                         geral: [185, 200],
-                        redDot: [175, 200],
-                        x2: [180, 200],
+                        redDot: [180, 200],
+                        x2: [185, 200],
                         x4: [180, 200],
-                        awm: [100, 160], // Rushers as vezes usam AWM rápida
-                        dpi: [800, 960],
-                        btn: [40, 55]
+                        awm: [130, 180],
+                        dpi: [900, 960], // User asked max 960
+                        btn: [35, 50]
                     }
                 },
-                {
-                    name: 'PERFIL: HÍBRIDO (BALANCEADO)',
+                mid: {
+                    name: 'PERFIL: MÉDIA (BALANCEADA)',
+                    desc: 'Equilíbrio entre Rush e Precisão',
                     ranges: {
-                        geral: [165, 190],
-                        redDot: [160, 185],
-                        x2: [165, 190],
-                        x4: [165, 190],
-                        awm: [80, 140],
-                        dpi: [650, 850],
-                        btn: [50, 65]
-                    }
-                },
-                {
-                    name: 'PERFIL: PRECISION (SUPORTE)',
-                    ranges: {
-                        geral: [145, 180],
-                        redDot: [140, 175],
+                        geral: [150, 184],
+                        redDot: [145, 179],
                         x2: [150, 180],
                         x4: [150, 180],
-                        awm: [40, 110], // Mais precisão
-                        dpi: [500, 700],
-                        btn: [60, 80]
+                        awm: [100, 140],
+                        dpi: [650, 800],
+                        btn: [45, 60]
+                    }
+                },
+                low: {
+                    name: 'PERFIL: BAIXA (PRECISÃO)',
+                    desc: 'Estabilidade Total (Mira Grudada)',
+                    ranges: {
+                        geral: [100, 149],
+                        redDot: [90, 140],
+                        x2: [100, 140],
+                        x4: [100, 140],
+                        awm: [50, 90],
+                        dpi: [500, 649],
+                        btn: [55, 80]
                     }
                 }
-            ];
+            };
 
-            // Seleciona um perfil aleatório
-            const profile = profiles[Math.floor(Math.random() * profiles.length)];
-            
-            // Função auxiliar para gerar número no range
+            // Determina qual perfil usar
+            let selectedProfileKey = currentSensiMode;
+            if (currentSensiMode === 'random') {
+                const keys = ['high', 'mid', 'low'];
+                selectedProfileKey = keys[Math.floor(Math.random() * keys.length)];
+            }
+
+            const profile = profilesData[selectedProfileKey];
             const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
             const sensiConfig = [
@@ -477,25 +596,41 @@
             const dpi = rand(...profile.ranges.dpi);
             const btnSize = rand(...profile.ranges.btn);
 
-            // Render Grid
+            // Update UI
             const grid = document.getElementById('sensi-grid');
             if(grid) {
-                // Atualiza Nome do Perfil
+                // Nome do Perfil
                 const profileNameDiv = document.getElementById('sensi-profile-name');
-                if(profileNameDiv) profileNameDiv.innerText = profile.name;
+                if(profileNameDiv) {
+                    profileNameDiv.innerHTML = `
+                        <div>${profile.name}</div>
+                        <div class="text-[10px] text-zinc-500 font-normal mt-1">${profile.desc}</div>
+                    `;
+                }
 
+                // Cards de Sensi
                 grid.innerHTML = sensiConfig.map(s => `
                     <div class="bg-zinc-900 border border-zinc-800 p-4 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-purple-500/50 transition-colors">
-                        <span class="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">${s.label}</span>
+                        <div class="flex items-center gap-2 text-zinc-500 mb-1">
+                            <i data-lucide="${s.icon}" class="w-3 h-3"></i>
+                            <span class="text-[10px] uppercase font-bold tracking-wider">${s.label}</span>
+                        </div>
                         <span class="text-4xl font-black text-white">${s.val}</span>
                         <div class="w-full bg-zinc-800 h-1.5 rounded-full mt-1 overflow-hidden">
-                            <div class="bg-purple-600 h-full" style="width: ${(s.val / 200) * 100}%"></div>
+                            <div class="bg-purple-600 h-full transition-all duration-500" style="width: ${(s.val / 200) * 100}%"></div>
                         </div>
                     </div>
                 `).join('');
                 
+                // DPI e Botão
                 document.getElementById('dpi-display').innerText = dpi;
                 document.getElementById('btn-size-display').innerText = btnSize + '%';
+                
+                // Descrição do range da DPI
+                const dpiRangeDesc = document.getElementById('dpi-range-desc');
+                if(dpiRangeDesc) dpiRangeDesc.innerText = `Faixa: ${profile.ranges.dpi[0]} - ${profile.ranges.dpi[1]}`;
+
+                lucide.createIcons();
             }
         }
 
@@ -514,7 +649,7 @@
                 renderSensi(container);
             }
             
-            lucide.createIcons(); // Re-inicializa ícones
+            lucide.createIcons(); 
         }
 
         function renderSquad(container) {
@@ -586,8 +721,6 @@
 
         function renderMap(container) {
             const map = mapsData[currentMapKey];
-            
-            // Image Section
             let imageHtml = '';
             if (map.image) {
                 imageHtml = `
@@ -604,7 +737,6 @@
                 `;
             }
 
-            // Tabs Section
             let tabsHtml = '<div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-zinc-800 pb-6 mb-6">';
             tabsHtml += `
                 <div>
@@ -623,7 +755,6 @@
             });
             tabsHtml += '</div></div>';
 
-            // Locations Grid
             let gridHtml = '<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fadeIn">';
             map.locations.forEach(loc => {
                 const isSelected = selectedLocationId === loc.id;
@@ -659,8 +790,6 @@
         function renderTraining(container) {
             let html = `
                 <div class="space-y-8 animate-fadeIn">
-                    
-                    <!-- SCHEDULE SECTION -->
                     <div>
                         <h2 class="text-2xl font-bold text-white flex items-center gap-3 uppercase mb-6">
                             <i data-lucide="calendar" class="text-white"></i> Cronograma Semanal
@@ -685,17 +814,11 @@
                 `;
             });
 
-            html += `
-                        </div>
-                    </div>
-
-                    <!-- TIPS SECTION -->
-                    <div>
+            html += `</div></div><div>
                         <h2 class="text-2xl font-bold text-white flex items-center gap-3 uppercase mb-6 mt-4">
                             <i data-lucide="lightbulb" class="text-purple-500"></i> Dicas Táticas de Elite
                         </h2>
-                        <div class="grid md:grid-cols-2 gap-4">
-            `;
+                        <div class="grid md:grid-cols-2 gap-4">`;
 
             tacticalTips.forEach(tip => {
                 html += `
@@ -714,7 +837,7 @@
 
         // Inicialização
         document.addEventListener('DOMContentLoaded', () => {
-            renderContent();
+            switchTab('squad'); 
         });
 
     </script>
